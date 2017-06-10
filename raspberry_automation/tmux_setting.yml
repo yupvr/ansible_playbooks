@@ -1,0 +1,46 @@
+# Author: Yurii Pyvovarov <yuriy.pyvovarov@gmail.com>
+# Setup tmux on Raspberry PI
+---
+- hosts: pi
+  remote_user: pi
+
+  tasks:
+    - name: Setup tmux configuration file
+      get_url:
+        url: https://gist.githubusercontent.com/yupvr/4d34791f1fc9baebfabcaa08eb3f10b2/raw/b26ea7696e8297d436531b95e81b12519149d862/.tmux.conf
+        dest: ~/.tmux.conf
+
+    - name: Disable mouse support
+      lineinfile:
+        path: ~/.tmux.conf
+        regexp: "set -g mouse on"
+        line: "# set -g mouse on"
+
+    - name: Install Tmux Plugin Manager
+      git:
+        repo: https://github.com/tmux-plugins/tpm
+        dest: ~/.tmux/plugins/tpm
+
+    - name: Install latest Tmuxinator
+      become: yes
+      become_method: sudo
+      gem:
+        name: tmuxinator
+        state: latest
+        user_install: no
+
+    - name: Set user bin directory
+      file:
+        path: ~/.bin
+        state: directory
+
+    - name: Set tmuxinator completion
+      copy:
+        remote_src: True
+        src: /var/lib/gems/2.1.0/gems/tmuxinator-0.9.0/completion/tmuxinator.bash
+        dest: ~/.bin/tmuxinator.bash
+
+    - name: Set bash setting
+      lineinfile:
+        path: ~/.bashrc
+        line: "source ~/.bin/tmuxinator.bash"

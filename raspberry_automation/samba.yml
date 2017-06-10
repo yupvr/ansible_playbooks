@@ -1,0 +1,49 @@
+# Author: Yurii Pyvovarov <yuriy.pyvovarov@gmail.com>
+# Setup Samba server at Raspberry PI
+---
+- hosts: pi
+  remote_user: pi
+  become: yes
+  become_method: sudo
+
+  tasks:
+    - name: Install samba packages
+      become: yes
+      become_method: sudo
+      apt:
+        name: '{{item}}'
+        state: latest
+      with_items:
+        - samba
+        - samba-common-bin
+
+    - name: Enable samba service
+      systemd:
+        name: smbd.service
+        state: started
+        enabled: True
+
+    - name: Add share to storage
+      blockinfile:
+        path: /etc/samba/smb.conf
+        block: |
+          [Storage]
+              comment = Storage
+              path = /mnt/storage/
+              browseable=Yes
+              writeable=Yes
+              only guest=no
+              create mask=0644
+              directory mask=0775
+              public=no
+      notify:
+        - Restarte samba
+
+# Create samba user
+# sudo smbpasswd -a pi
+
+  handlers:
+    - name: Restarte samba
+      systemd:
+        name: smbd.service
+        state: restarted
